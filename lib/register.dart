@@ -1,26 +1,55 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  @override
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  Future<void> registerUser() async {
+    setState(() => isLoading = true);
+
+final url = Uri.parse("http://10.100.4.227/flutter_api/api/register.php");
+
+    final response = await http.post(url, body: {
+      "name": _nameController.text,
+      "email": _emailController.text,
+      "password": _passwordController.text,
+    });
+
+    final data = json.decode(response.body);
+    setState(() => isLoading = false);
+
+    if (data['status'] == 'success') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Register berhasil!")));
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'])));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // Background
           Container(color: Colors.black),
-
-          // Blur layer
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
             child: Container(color: Colors.black.withOpacity(0.4)),
           ),
-
-          // Layout Builder for Responsive Layout
           LayoutBuilder(
             builder: (context, constraints) {
               bool isWide = constraints.maxWidth >= 800;
-
               return Center(
                 child: SafeArea(
                   child: Container(
@@ -34,31 +63,22 @@ class RegisterPage extends StatelessWidget {
                     child: isWide
                         ? Row(
                             children: [
-                              // LEFT: Logo occupies 50%
                               Expanded(
                                 flex: 1,
                                 child: Container(
                                   alignment: Alignment.center,
                                   height: 400,
-                                  child: Image.asset(
-                                    'assets/logotwitter.jpg',
-                                    height: 200,
-                                  ),
+                                  child: Image.asset('assets/logotwitter.jpg', height: 200),
                                 ),
                               ),
                               SizedBox(width: 32),
-
-                              // RIGHT: Registration form
                               Expanded(flex: 1, child: _formContent(context)),
                             ],
                           )
                         : Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Image.asset(
-                                'assets/logotwitter.jpg',
-                                height: 200, 
-                              ),
+                              Image.asset('assets/logotwitter.jpg', height: 200),
                               SizedBox(height: 24),
                               _formContent(context),
                             ],
@@ -77,89 +97,62 @@ class RegisterPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          'Happening now',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
+        Text('Join now', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+        SizedBox(height: 24),
+
+        TextField(
+          controller: _nameController,
+          style: TextStyle(color: Colors.white),
+          decoration: _inputDecoration("Full Name"),
         ),
         SizedBox(height: 16),
-        Text(
-          'Join today.',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 32),
 
-        // Social buttons
-        _socialButton(
-          icon: Icons.g_mobiledata,
-          label: 'Sign up with Google',
-          onPressed: () {},
+        TextField(
+          controller: _emailController,
+          style: TextStyle(color: Colors.white),
+          decoration: _inputDecoration("Email"),
         ),
-        SizedBox(height: 12),
-        _socialButton(
-          icon: Icons.apple,
-          label: 'Sign up with Apple',
-          onPressed: () {},
+        SizedBox(height: 16),
+
+        TextField(
+          controller: _passwordController,
+          obscureText: true,
+          style: TextStyle(color: Colors.white),
+          decoration: _inputDecoration("Password"),
         ),
-        SizedBox(height: 20),
+        SizedBox(height: 24),
 
-        Text("OR", style: TextStyle(color: Colors.grey)),
-        SizedBox(height: 20),
-
-        // Create Account Button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, '/create-account'),
+            onPressed: isLoading ? null : registerUser,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               padding: EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             ),
-            child: Text(
-              'Create Account',
-              style: TextStyle(fontSize: 16),
-            ),
+            child: isLoading
+                ? CircularProgressIndicator(color: Colors.white)
+                : Text('Create Account'),
           ),
         ),
         SizedBox(height: 20),
 
-        // Terms
         Text(
-          'By signing up, you agree to the Terms of Service and Privacy Policy, including Cookie Use.',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
+          'By signing up, you agree to the Terms of Service and Privacy Policy.',
+          style: TextStyle(color: Colors.grey, fontSize: 12),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 30),
+        SizedBox(height: 20),
 
-        // Already have account
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "Already have an account? ",
-              style: TextStyle(color: Colors.white),
-            ),
+            Text("Already have an account? ", style: TextStyle(color: Colors.white)),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text("Log in"),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.white,
-              ),
+              style: TextButton.styleFrom(foregroundColor: Colors.white),
             ),
           ],
         ),
@@ -167,28 +160,13 @@ class RegisterPage extends StatelessWidget {
     );
   }
 
-  Widget _socialButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, color: Colors.black),
-        label: Text(
-          label,
-          style: TextStyle(color: Colors.black),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          padding: EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-      ),
+  InputDecoration _inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey),
+      filled: true,
+      fillColor: Colors.grey[900],
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 }

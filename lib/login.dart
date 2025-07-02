@@ -1,7 +1,42 @@
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool isLoading = false;
+
+  Future<void> loginUser() async {
+    setState(() => isLoading = true);
+final url = Uri.parse("http://10.100.4.227/flutter_api/api/login.php");
+
+    final response = await http.post(url, body: {
+      "email": _emailController.text,
+      "password": _passwordController.text,
+    });
+
+    final data = json.decode(response.body);
+    setState(() => isLoading = false);
+
+    if (data['status'] == 'success') {
+      // Navigasi ke home page
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      // Tampilkan pesan error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'])),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,7 +53,7 @@ class LoginPage extends StatelessWidget {
             ),
           ),
 
-          // Centered black popup
+          // Centered login card
           Center(
             child: SafeArea(
               child: Container(
@@ -32,28 +67,21 @@ class LoginPage extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Close icon
                       Align(
                         alignment: Alignment.topLeft,
                         child: Icon(Icons.close, color: Colors.white),
                       ),
                       SizedBox(height: 10),
 
-                      // X Logo (placeholder icon)
                       Icon(Icons.close_fullscreen, size: 40, color: Colors.white),
                       SizedBox(height: 16),
 
                       Text(
                         'Sign in to X',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       SizedBox(height: 24),
 
-                      // Social buttons
                       _socialButton(
                         icon: Icons.g_mobiledata,
                         label: 'Login with Google',
@@ -70,40 +98,49 @@ class LoginPage extends StatelessWidget {
                       Text("or", style: TextStyle(color: Colors.grey)),
                       SizedBox(height: 20),
 
-                      // Input field
                       TextField(
+                        controller: _emailController,
                         style: TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: 'Phone, email, or username',
+                          hintText: 'Email',
                           hintStyle: TextStyle(color: Colors.grey),
                           filled: true,
                           fillColor: Colors.grey[900],
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        style: TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Password',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.grey[900],
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
                       SizedBox(height: 20),
 
-                      // Next button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                          onPressed: isLoading ? null : loginUser,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
                             padding: EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                           ),
-                          child: Text('Next'),
+                          child: isLoading
+                              ? CircularProgressIndicator(color: Colors.black)
+                              : Text('Login'),
                         ),
                       ),
                       SizedBox(height: 12),
 
-                      // Forgot password
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
@@ -111,9 +148,7 @@ class LoginPage extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Colors.white),
                             padding: EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                             foregroundColor: Colors.white,
                           ),
                           child: Text('Forgot password?'),
@@ -121,15 +156,14 @@ class LoginPage extends StatelessWidget {
                       ),
                       SizedBox(height: 16),
 
-                      // Sign up prompt
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text("Don't have an account?", style: TextStyle(color: Colors.grey[400])),
                           TextButton(
                             onPressed: () => Navigator.pushNamed(context, '/register'),
-                            child: Text('Sign up'),
                             style: TextButton.styleFrom(foregroundColor: Colors.white),
+                            child: Text('Sign up'),
                           ),
                         ],
                       )
@@ -144,7 +178,6 @@ class LoginPage extends StatelessWidget {
     );
   }
 
-  // Social button builder
   Widget _socialButton({
     required IconData icon,
     required String label,
@@ -159,9 +192,7 @@ class LoginPage extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
           padding: EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         ),
       ),
     );
